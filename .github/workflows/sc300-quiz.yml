@@ -1,0 +1,28 @@
+name: SC-300 push quiz
+
+on:
+  schedule:
+    # Runs a quick check every 15 minutes across the window 00:00-07:30 UTC,
+    # which is 08:00-15:30 Perth time (AWST, UTC+8, no daylight saving).
+    # The script itself decides, once per day, the 5 random times to actually push;
+    # every other run exits in about a second. "1-5" = Mon-Fri (use "*" for all days).
+    - cron: "0,15,30,45 0-6 * * 1-5"
+    - cron: "0,15,30 7 * * 1-5"
+  workflow_dispatch:
+    inputs:
+      test_slot:
+        description: "Send a test question now from this slot (0-4)"
+        required: false
+        default: "0"
+
+jobs:
+  push:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run the quiz check
+        env:
+          NTFY_TOPIC: ${{ secrets.NTFY_TOPIC }}
+          # On manual runs only, force an immediate test push from the chosen slot.
+          FORCE_SLOT: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.test_slot || '' }}
+        run: python3 send_question.py
