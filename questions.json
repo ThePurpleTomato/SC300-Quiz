@@ -1,0 +1,1302 @@
+[
+  {
+    "id": "sc300-01",
+    "tag": "D1 Hybrid identity",
+    "question": "Your org needs cloud sign-in to keep working even if the on-premises servers are completely offline, with the least maintenance and no extra on-prem hardware. Which authentication method fits best?",
+    "options": {
+      "A": "Pass-through authentication (PTA)",
+      "B": "Password hash synchronization (PHS)",
+      "C": "Federation with AD FS",
+      "D": "Seamless SSO"
+    },
+    "answer": "B",
+    "explanation": "PHS syncs a password hash to Entra ID, so the cloud validates sign-ins on its own. It keeps working during a full on-prem outage and is the lowest-maintenance option. PTA (A) validates against on-prem in real time, so it fails when servers are down. Federation (C) is the heaviest and also depends on on-prem AD FS being up. Seamless SSO (D) is not a validation method, just a convenience layer on top of PHS/PTA. Trigger: 'survives on-prem outage / simplest' -> PHS."
+  },
+  {
+    "id": "sc300-02",
+    "tag": "D2 Authentication methods",
+    "question": "Policy forbids storing any password hash in the cloud, and sign-ins must validate against on-prem AD in real time and honour live account-lockout. Which method?",
+    "options": {
+      "A": "Password hash synchronization",
+      "B": "Pass-through authentication",
+      "C": "Seamless SSO",
+      "D": "Federation with AD FS"
+    },
+    "answer": "B",
+    "explanation": "PTA keeps no hash in the cloud. An on-prem agent validates each sign-in directly against AD in real time, so disabled accounts and lockout policy apply instantly. PHS (A) stores a hash in the cloud, which the policy forbids. Seamless SSO (C) is only a silent sign-in layer, not a validator. Federation (D) also validates on-prem but is far heavier than required. Trigger: 'no hash in cloud / validate on-prem in real time' -> PTA."
+  },
+  {
+    "id": "sc300-03",
+    "tag": "D3 Workload identities",
+    "question": "An Azure VM must read secrets from Key Vault with no credentials stored anywhere. It is a single resource and the identity will not be shared. Best identity?",
+    "options": {
+      "A": "App registration with a client secret",
+      "B": "System-assigned managed identity",
+      "C": "User-assigned managed identity",
+      "D": "Service principal with a certificate"
+    },
+    "answer": "B",
+    "explanation": "A system-assigned managed identity is Azure-managed with no secret to store, and it is 1:1 with the resource (created and deleted with it). Perfect for a single, unshared resource. User-assigned (C) is also credential-free but is a standalone, shareable identity, overkill when nothing else uses it. App registration with a secret (A) and SP with a cert (D) both reintroduce the credential you are told to avoid. Trigger: 'no secrets + single resource' -> system-assigned MI."
+  },
+  {
+    "id": "sc300-04",
+    "tag": "D4 Monitoring & logs",
+    "question": "Analysts need to run custom KQL queries against Entra sign-in logs to build their own detections. Where must logs be routed via diagnostic settings?",
+    "options": {
+      "A": "A storage account",
+      "B": "A Log Analytics workspace",
+      "C": "An Event Hub",
+      "D": "The sign-in logs blade"
+    },
+    "answer": "B",
+    "explanation": "KQL runs against a Log Analytics workspace, the destination built for querying and analysis. Storage (A) is cheap archive only and cannot be queried with KQL. Event Hub (C) streams to external SIEMs, it is not a query surface. The sign-in logs blade (D) is not a diagnostic-settings destination at all. Lock it: KQL -> Log Analytics; archive -> storage; stream/SIEM -> Event Hub."
+  },
+  {
+    "id": "sc300-05",
+    "tag": "D1 Hybrid identity",
+    "question": "After several acquisitions you have four AD forests with no trust between them. You want one cloud-managed tool, multiple agents for HA, PHS only, no writeback or Exchange hybrid. Best choice?",
+    "options": {
+      "A": "Entra Connect Sync",
+      "B": "Entra Cloud Sync",
+      "C": "One Connect Sync server per forest",
+      "D": "AD FS federation"
+    },
+    "answer": "B",
+    "explanation": "Every cue points to Cloud Sync: disconnected forests, cloud-managed config, multiple active agents for HA, PHS-only, no advanced writeback. Connect Sync (A/C) is heavier, server-based, and not the simplest cloud-managed fit when nothing needs its advanced features. AD FS (D) is an auth/federation system, not a sync tool. Trigger: 'disconnected forests / lightweight / cloud-managed' -> Cloud Sync."
+  },
+  {
+    "id": "sc300-06",
+    "tag": "D2 Authentication methods",
+    "question": "You want users on domain-joined devices on the corporate network to be signed in silently with no username/password prompt. Which feature provides this?",
+    "options": {
+      "A": "Pass-through authentication",
+      "B": "Seamless SSO",
+      "C": "Conditional Access",
+      "D": "Temporary Access Pass"
+    },
+    "answer": "B",
+    "explanation": "Seamless SSO uses Kerberos to sign users in silently on domain-joined corporate-network devices, no prompt. It rides on top of PHS or PTA and does not validate credentials itself. PTA (A) validates credentials but does not deliver the silent experience alone. CA (C) governs access conditions, not SSO. TAP (D) is a temporary onboarding passcode. Trigger: 'silent sign-in, no prompt, corporate device' -> Seamless SSO."
+  },
+  {
+    "id": "sc300-07",
+    "tag": "D3 Workload identities",
+    "question": "Several Azure resources must share one identity that persists even if any single resource is deleted. Which identity?",
+    "options": {
+      "A": "System-assigned managed identity",
+      "B": "User-assigned managed identity",
+      "C": "App registration with a certificate",
+      "D": "A separate service principal per resource"
+    },
+    "answer": "B",
+    "explanation": "A user-assigned managed identity is a standalone Azure resource: credential-free, shareable across many resources, and it survives when any one of them is deleted. System-assigned (A) is 1:1 and dies with its resource, so it cannot be shared. App registration with a cert (C) means managing credentials. Separate SPs (D) defeats 'share one identity'. Trigger: 'shared across resources / survives deletion' -> user-assigned MI."
+  },
+  {
+    "id": "sc300-08",
+    "tag": "D4 Monitoring & logs",
+    "question": "Compliance requires Entra audit logs retained cheaply for seven years. No querying, pure long-term archive. Which destination?",
+    "options": {
+      "A": "A Log Analytics workspace",
+      "B": "An Event Hub",
+      "C": "A storage account",
+      "D": "A workbook"
+    },
+    "answer": "C",
+    "explanation": "A storage account is the cheap, durable long-term archive destination. Log Analytics (A) is for querying and is costlier to retain at scale. Event Hub (B) streams data out, it does not store it long-term. A workbook (D) visualises data, it is not a log store. Trigger: 'archive / retain for years / cheap / compliance' -> storage account."
+  },
+  {
+    "id": "sc300-09",
+    "tag": "D1 Hybrid identity",
+    "question": "Your hybrid setup needs group writeback to on-prem AD, Exchange hybrid, and keeps AD FS federation for one app during migration. Which sync tool must you use?",
+    "options": {
+      "A": "Entra Cloud Sync",
+      "B": "Entra Connect Sync",
+      "C": "Cross-tenant synchronization",
+      "D": "Either tool works"
+    },
+    "answer": "B",
+    "explanation": "Writeback, Exchange hybrid, and federation are all Connect Sync-only capabilities. Cloud Sync supports none of them (it is PHS-only, lightweight, no writeback). Cross-tenant sync (C) provisions B2B users between tenants, unrelated to on-prem. 'Either tool' (D) is wrong because Cloud Sync cannot meet these requirements. Trigger: 'device/group writeback / Exchange hybrid / federation' -> Connect Sync."
+  },
+  {
+    "id": "sc300-10",
+    "tag": "D2 ID Protection",
+    "question": "Security wants ID Protection to flag users whose credentials appear in public breach dumps (leaked-credential detection). Which sign-in method must be in place?",
+    "options": {
+      "A": "Pass-through authentication",
+      "B": "Federation",
+      "C": "Password hash synchronization",
+      "D": "Seamless SSO"
+    },
+    "answer": "C",
+    "explanation": "Leaked-credential detection compares the synced password hash against breach corpuses, so it only works when PHS is enabled. PTA (A) and Federation (B) store no hash in the cloud, so this detection cannot run unless PHS is also turned on alongside them. Seamless SSO (D) is just a sign-in layer. Trigger: 'leaked / breached credential detection' -> PHS required."
+  },
+  {
+    "id": "sc300-11",
+    "tag": "D3 App registration",
+    "question": "When you register an application in Entra ID, which two objects are created?",
+    "options": {
+      "A": "Only a service principal",
+      "B": "An application object (global) and a service principal (local)",
+      "C": "A managed identity and a group",
+      "D": "Two service principals"
+    },
+    "answer": "B",
+    "explanation": "Registering an app creates a global application object (the blueprint, lives in the home tenant) plus a service principal (the local instance that gets permissions and role assignments in the tenant). The other options misstate this. Remember: app registration = application object + service principal; the SP is the thing that gets role assignments."
+  },
+  {
+    "id": "sc300-12",
+    "tag": "D4 Monitoring & logs",
+    "question": "Your company runs Splunk as its SIEM and wants Entra logs streamed to it in near-real-time. Which diagnostic-settings destination?",
+    "options": {
+      "A": "A storage account",
+      "B": "An Event Hub",
+      "C": "A Log Analytics workspace",
+      "D": "The sign-in logs blade"
+    },
+    "answer": "B",
+    "explanation": "A named external SIEM (Splunk, Sumo Logic, ArcSight, QRadar) means Event Hub, the streaming pipe Microsoft routes third-party tools through. Storage (A) is archive. Log Analytics (C) is the query surface, not an export pipe to external tools. The blade (D) is not a diagnostic destination. Trigger: 'stream / SIEM / Splunk / real-time export' -> Event Hub."
+  },
+  {
+    "id": "sc300-13",
+    "tag": "D1 Groups & licensing",
+    "question": "You need a security group that automatically includes every user whose jobTitle contains 'Nurse', updating as people are hired or change roles. What do you create, and what is the minimum license?",
+    "options": {
+      "A": "Assigned security group; Free",
+      "B": "Dynamic security group; Entra ID P1",
+      "C": "Dynamic Microsoft 365 group; Entra ID P2",
+      "D": "Dynamic security group; Free"
+    },
+    "answer": "B",
+    "explanation": "Attribute-driven, auto-updating membership is a dynamic group, and dynamic membership requires Entra ID P1. D gets the type right but the license wrong (it is P1, not Free) - the common trap. Assigned (A) does not auto-update. C wrongly says M365 and P2. Lock the flat fact: dynamic groups = P1."
+  },
+  {
+    "id": "sc300-14",
+    "tag": "D2 Conditional Access",
+    "question": "Security defaults are enabled. You must require MFA only for a specific app and only from untrusted locations. What must you do?",
+    "options": {
+      "A": "Keep defaults and add exclusions",
+      "B": "Disable security defaults and create a Conditional Access policy (P1)",
+      "C": "Enable per-user MFA for everyone",
+      "D": "Enable a sign-in risk policy"
+    },
+    "answer": "B",
+    "explanation": "Granular targeting (specific app + location) needs Conditional Access, and security defaults are all-or-nothing and mutually exclusive with CA, so you must turn defaults off first. CA requires P1. Defaults (A) cannot be made granular. Per-user MFA (C) is blunt, no app/location scoping. A risk policy (D) responds to risk (not stated here) and needs P2. Trigger: 'granular app/location, no risk' -> CA (P1)."
+  },
+  {
+    "id": "sc300-15",
+    "tag": "D3 App consent",
+    "question": "You want to reduce illicit-consent attacks without blocking all legitimate apps. Best approach?",
+    "options": {
+      "A": "Block all enterprise applications",
+      "B": "Restrict user consent to verified publishers / low-risk permissions and enable an admin consent workflow",
+      "C": "Give all users admin consent rights",
+      "D": "Disable MFA for app sign-ins"
+    },
+    "answer": "B",
+    "explanation": "Restricting user consent kills the path where a user grants a malicious app broad access, and the admin consent workflow routes legitimate larger requests to an admin - security without breaking usage. Blocking everything (A) breaks legitimate apps. Granting everyone admin consent (C) is the opposite of least privilege and increases tenant-wide risk. Disabling MFA (D) is unrelated and weakens security. Trigger: 'reduce illicit consent, keep legit apps' -> restrict user consent + admin consent workflow."
+  },
+  {
+    "id": "sc300-16",
+    "tag": "D4 Entitlement management",
+    "question": "External partners should request a bundle of a group, an app, and a SharePoint site through a self-service portal, with approval and auto-expiry after 90 days. What do you build?",
+    "options": {
+      "A": "An access review",
+      "B": "An access package in entitlement management",
+      "C": "A PIM eligible assignment",
+      "D": "A dynamic group"
+    },
+    "answer": "B",
+    "explanation": "Bundling resources into a self-service requestable unit with approval and expiry is exactly an access package in entitlement management. Access reviews (A) recertify existing access, they do not grant bundles. PIM (C) elevates privileged roles, not resource bundles. Dynamic groups (D) auto-assign by attribute, with no request/approval/expiry. Trigger: 'request a bundle / self-service / auto-expire' -> entitlement management."
+  },
+  {
+    "id": "sc300-17",
+    "tag": "D1 Roles & admin units",
+    "question": "A regional IT team should manage users and reset passwords for the London office only, nowhere else, following least privilege. Best approach?",
+    "options": {
+      "A": "Helpdesk Administrator at tenant scope",
+      "B": "Create an administrative unit for London and assign a scoped role over it",
+      "C": "Add them to a dynamic group of London users",
+      "D": "Custom role with password-reset permissions"
+    },
+    "answer": "B",
+    "explanation": "An administrative unit scopes administration to a subset of objects (London), and you assign a least-privilege role over that AU - the delegation pattern. Tenant-scope Helpdesk Admin (A) over-grants to the whole tenant. A dynamic group (C) controls membership, not admin scope. A custom role (D) defines what an admin can do, not which objects they can touch - you would still need the AU for the 'where'. AU = where/scope; custom role = what/permissions."
+  },
+  {
+    "id": "sc300-18",
+    "tag": "D2 Conditional Access",
+    "question": "An account is flagged compromised. You must revoke its active sessions in near-real-time rather than waiting up to an hour for token expiry. Which feature?",
+    "options": {
+      "A": "Sign-in frequency session control",
+      "B": "Continuous access evaluation (CAE)",
+      "C": "Persistent browser session",
+      "D": "A risk-based password-change policy"
+    },
+    "answer": "B",
+    "explanation": "CAE signals resource providers to reject existing tokens mid-session on critical events (disable, password reset, detected compromise) - the near-real-time revocation you need. Sign-in frequency (A) only forces reauth on a timer. Persistent browser (C) does the opposite, keeping sessions alive. A risk-based password policy (D) acts on the next sign-in and fixes the account, not the live session. Trigger: 'revoke active session immediately' -> CAE."
+  },
+  {
+    "id": "sc300-19",
+    "tag": "D3 Enterprise apps",
+    "question": "You must publish an internal on-prem web application to remote employees with Entra pre-authentication and no VPN. Which feature?",
+    "options": {
+      "A": "GSA Internet Access",
+      "B": "Microsoft Entra Application Proxy",
+      "C": "Defender for Cloud Apps",
+      "D": "Cross-tenant access"
+    },
+    "answer": "B",
+    "explanation": "Application Proxy publishes on-prem web apps for remote access with Entra pre-auth via connectors, no VPN. GSA Internet Access (A) secures outbound web/M365 traffic, it does not publish apps. Defender for Cloud Apps (C) governs app usage/sessions, not publishing. Cross-tenant access (D) is partner trust. Trigger: 'publish on-prem web app / pre-auth' -> App Proxy. (For broad non-web private access, that is GSA Private Access.)"
+  },
+  {
+    "id": "sc300-20",
+    "tag": "D4 PIM",
+    "question": "Admins should hold Global Administrator only when needed, activating with MFA and approval for max 4 hours, with no standing access otherwise. What do you configure?",
+    "options": {
+      "A": "An active role assignment in PIM",
+      "B": "An eligible PIM assignment with activation settings",
+      "C": "A Conditional Access policy",
+      "D": "An access review of Global Admins"
+    },
+    "answer": "B",
+    "explanation": "An eligible PIM assignment gives just-in-time access: the admin must activate, and you can require MFA, approval, justification, and a time limit - eliminating standing access. An active assignment (A) is the standing access you are trying to avoid. CA (C) cannot time-box role activation. An access review (D) recertifies existing assignments, it does not provide JIT. Trigger: 'just-in-time / activate / no standing access' -> PIM eligible."
+  },
+  {
+    "id": "sc300-21",
+    "tag": "D1 External identities",
+    "question": "Your company acquires a subsidiary with its own Entra tenant. You want its employees automatically provisioned as B2B guests in your tenant, kept in sync, and removed when they leave. What do you configure?",
+    "options": {
+      "A": "Cross-tenant access settings only",
+      "B": "Cross-tenant synchronization",
+      "C": "Entra Cloud Sync",
+      "D": "An entitlement management access package"
+    },
+    "answer": "B",
+    "explanation": "Cross-tenant synchronization auto-provisions B2B users from one tenant into another and de-provisions on departure - exactly this. Cross-tenant access settings (A) govern trust (who can collaborate, trusting partner MFA) but create no accounts by themselves. Cloud Sync (C) is on-prem AD -> cloud, not tenant -> tenant. An access package (D) is request-driven, not automatic source-tenant provisioning. Trigger: 'automatically provision users into the other tenant' -> CTS."
+  },
+  {
+    "id": "sc300-22",
+    "tag": "D2 ID Protection",
+    "question": "When ID Protection flags a sign-in as high risk, you must block access automatically. Minimum license and correct mechanism?",
+    "options": {
+      "A": "P1; standard Conditional Access",
+      "B": "P2; risk-based Conditional Access policy",
+      "C": "Free; security defaults",
+      "D": "P1; named locations"
+    },
+    "answer": "B",
+    "explanation": "Risk signals come from ID Protection, which requires P2, applied through a risk-based Conditional Access policy. Plain CA (A, P1) cannot consume risk signals. Security defaults (C) have no risk logic. Named locations (D) are static, not risk. Trigger: 'risk / risky sign-in' -> P2 + risk-based CA."
+  },
+  {
+    "id": "sc300-23",
+    "tag": "D3 Defender for Cloud Apps",
+    "question": "Security wants to discover shadow IT - unsanctioned cloud apps employees use - from network/log data. Which tool?",
+    "options": {
+      "A": "Conditional Access",
+      "B": "Defender for Cloud Apps cloud discovery",
+      "C": "PIM",
+      "D": "Identity Secure Score"
+    },
+    "answer": "B",
+    "explanation": "Defender for Cloud Apps cloud discovery surfaces shadow IT by analysing traffic/log data against its cloud app catalog. CA (A) enforces access conditions, it does not discover apps. PIM (C) is privilege elevation. Identity Secure Score (D) is posture scoring. Trigger: 'discover shadow IT / unsanctioned apps from logs' -> Defender for Cloud Apps cloud discovery."
+  },
+  {
+    "id": "sc300-24",
+    "tag": "D4 Access reviews",
+    "question": "Compliance wants group owners to recertify every 90 days whether members still need access, auto-removing anyone not reviewed. Which feature?",
+    "options": {
+      "A": "Entitlement management",
+      "B": "Access reviews",
+      "C": "PIM",
+      "D": "Conditional Access"
+    },
+    "answer": "B",
+    "explanation": "Access reviews recertify existing access on a recurring schedule, with auto-apply removing those denied or not reviewed. Entitlement management (A) grants/bundles access, it does not recertify. PIM (C) elevates privilege JIT. CA (D) governs sign-in conditions. Trigger: 'periodically confirm / recertify / remove stale' -> access reviews. (Recertify = reviews; grant a bundle = entitlement mgmt; elevate = PIM.)"
+  },
+  {
+    "id": "sc300-29",
+    "tag": "D1 Roles",
+    "question": "A team must create and manage Conditional Access policies but should not have broader directory powers. Which least-privilege role?",
+    "options": {
+      "A": "Global Administrator",
+      "B": "Conditional Access Administrator",
+      "C": "Security Reader",
+      "D": "User Administrator"
+    },
+    "answer": "B",
+    "explanation": "Conditional Access Administrator manages CA policies without the sweeping powers of Global Admin (A), which violates least privilege. Security Reader (C) is read-only and can't create policies. User Administrator (D) manages users, not CA. (Security Administrator can also manage CA, but the purpose-built least-privilege role here is Conditional Access Administrator.)"
+  },
+  {
+    "id": "sc300-25",
+    "tag": "D2 Authentication methods",
+    "question": "A new user has no authentication method registered yet, but you need them to bootstrap passwordless sign-in (register a passkey). What do you issue?",
+    "options": {
+      "A": "An OATH hardware token",
+      "B": "A Temporary Access Pass (TAP)",
+      "C": "An SMS one-time code",
+      "D": "A new password only"
+    },
+    "answer": "B",
+    "explanation": "A Temporary Access Pass is the time-limited passcode designed to onboard a user and bootstrap passwordless/passkey registration when they have no other method. An OATH token (A) still needs an existing method to register. SMS (C) is weak and not a passwordless onboarding path. A password (D) is not passwordless. Trigger: 'no method yet / onboard passwordless' -> TAP."
+  },
+  {
+    "id": "sc300-65",
+    "tag": "D3 Workload identities",
+    "question": "Which statement best distinguishes a managed identity from an ordinary service principal?",
+    "options": {
+      "A": "They are identical",
+      "B": "A managed identity is an Azure-managed service principal with no credentials for you to handle",
+      "C": "A service principal has no credentials",
+      "D": "A managed identity is only for human users"
+    },
+    "answer": "B",
+    "explanation": "A managed identity is a special service principal whose credentials Azure creates and rotates automatically - nothing to store. An ordinary service principal (C) typically has secrets/certs you manage. They aren't identical (A), and managed identities are for Azure resources/workloads, not humans (D). Trigger: 'SP with no credentials to manage' -> managed identity."
+  },
+  {
+    "id": "sc300-26",
+    "tag": "D4 Break-glass / CA",
+    "question": "You are enabling a Conditional Access policy that requires MFA and a compliant device for all users. How do you avoid locking yourself out if MFA or Intune fails?",
+    "options": {
+      "A": "Add all admins to a dynamic group",
+      "B": "Exclude two cloud-only break-glass accounts from the policy, with strong monitored credentials",
+      "C": "Schedule the policy to disable overnight",
+      "D": "Give break-glass accounts the User Administrator role"
+    },
+    "answer": "B",
+    "explanation": "Always exclude cloud-only break-glass (emergency-access) accounts from restrictive CA policies, with long monitored credentials, so they still work if MFA/Intune infrastructure fails. Admins are not auto-excluded. A dynamic group (A) does not prevent lockout. Disabling the policy (C) defeats its purpose. A specific role (D) does not address availability during an outage. Trigger: 'avoid tenant lockout / emergency access' -> exclude cloud-only break-glass accounts."
+  },
+  {
+    "id": "sc300-30",
+    "tag": "D1 Custom attributes",
+    "question": "You want to tag user and app objects with tenant-defined key/value metadata (e.g., project code, cost center) for filtering and access decisions. What do you use?",
+    "options": {
+      "A": "Administrative units",
+      "B": "Custom security attributes",
+      "C": "Extension dynamic groups",
+      "D": "Custom roles"
+    },
+    "answer": "B",
+    "explanation": "Custom security attributes are tenant-defined key/value metadata on objects, organised into attribute sets and governed by dedicated attribute roles. AUs (A) scope administration, not metadata. Custom roles (D) define permissions. There is no 'extension dynamic group' object (C). Trigger: 'tenant-defined key/value tags on objects' -> custom security attributes."
+  },
+  {
+    "id": "sc300-27",
+    "tag": "D2 Global Secure Access",
+    "question": "You need Zero Trust network access to private, non-web corporate apps for remote users - a VPN replacement. Which Global Secure Access capability?",
+    "options": {
+      "A": "Internet Access",
+      "B": "Private Access",
+      "C": "Internet Access for Microsoft 365",
+      "D": "Application Proxy"
+    },
+    "answer": "B",
+    "explanation": "GSA Private Access provides ZTNA to private apps over many protocols (not just web) via connectors - the VPN replacement. Internet Access (A) and Internet Access for M365 (C) secure outbound web/M365 traffic, not private app access. App Proxy (D) is limited to on-prem web apps with pre-auth. Trigger: 'ZTNA / non-web / replace VPN to private apps' -> GSA Private Access."
+  },
+  {
+    "id": "sc300-66",
+    "tag": "D3 Workload identities",
+    "question": "An Azure App Service must call Azure SQL. Which identity should it use, per Microsoft's recommendation?",
+    "options": {
+      "A": "A shared user account with a password",
+      "B": "A managed identity",
+      "C": "A service account synced from on-prem AD",
+      "D": "A connection string with SQL credentials"
+    },
+    "answer": "B",
+    "explanation": "A managed identity is the recommended way for an Azure resource to authenticate to other Azure services with no stored secret. A shared user (A) and a connection string with credentials (D) are anti-patterns. An on-prem service account (C) doesn't fit a cloud-to-cloud Azure call. Trigger: 'Azure resource -> Azure service, no secrets' -> managed identity."
+  },
+  {
+    "id": "sc300-28",
+    "tag": "D4 Identity Secure Score",
+    "question": "Leadership wants a single benchmarked score of your identity security posture with prioritised recommendations like 'enable MFA' and 'reduce Global Admins'. Which feature?",
+    "options": {
+      "A": "Access reviews",
+      "B": "Identity Secure Score",
+      "C": "Connect Health",
+      "D": "Entitlement management"
+    },
+    "answer": "B",
+    "explanation": "Identity Secure Score gives a benchmarked posture score with prioritised, actionable recommendations. Access reviews (A) and entitlement management (D) are governance features, not scoring. Connect Health (C) monitors sync/AD FS health. Trigger: 'benchmarked posture score / recommendations' -> Identity Secure Score."
+  },
+  {
+    "id": "sc300-31",
+    "tag": "D1 Devices",
+    "question": "Corporate Windows laptops must be fully managed in the cloud with no on-prem AD dependency, signed into with Entra credentials. Which device identity?",
+    "options": {
+      "A": "Entra registered",
+      "B": "Entra joined",
+      "C": "Entra hybrid joined",
+      "D": "Workplace joined"
+    },
+    "answer": "B",
+    "explanation": "Entra joined devices are joined directly to Entra ID with no on-prem AD, signed in with org credentials - the cloud-managed corporate device. Entra registered (A) is BYOD/personal. Hybrid joined (C) requires on-prem AD. 'Workplace joined' (D) is legacy wording for registered. Trigger: 'cloud-only corporate device, org credentials' -> Entra joined."
+  },
+  {
+    "id": "sc300-45",
+    "tag": "D2 Auth methods",
+    "question": "Security wants the most phishing-resistant authentication for high-value admins. Which method best fits?",
+    "options": {
+      "A": "SMS one-time code",
+      "B": "Microsoft Authenticator push",
+      "C": "Passkeys (FIDO2 security keys)",
+      "D": "Email one-time code"
+    },
+    "answer": "C",
+    "explanation": "Passkeys/FIDO2 are phishing-resistant: the credential is bound to the origin and can't be replayed to a fake site. SMS (A) and email OTP (D) are phishable and weak. Authenticator push (B) is strong but, without number matching, is vulnerable to MFA-fatigue prompts. Trigger: 'most phishing-resistant' -> passkeys/FIDO2 (also WHfB, CBA)."
+  },
+  {
+    "id": "sc300-67",
+    "tag": "D3 Workload identities",
+    "question": "After enabling a system-assigned managed identity on a VM, the VM still can't read Key Vault secrets. What's the missing step?",
+    "options": {
+      "A": "Create a client secret",
+      "B": "Grant the managed identity an appropriate role/access policy on the Key Vault",
+      "C": "Register an application",
+      "D": "Enable PHS"
+    },
+    "answer": "B",
+    "explanation": "A managed identity must still be authorized - grant it the right RBAC role (or Key Vault access policy) on the target resource. Creating a secret (A) defeats the point of a managed identity. Registering an app (C) is unnecessary. PHS (D) is unrelated hybrid auth. Trigger: 'MI exists but access denied' -> assign it a role on the target."
+  },
+  {
+    "id": "sc300-82",
+    "tag": "D4 Entitlement management",
+    "question": "In entitlement management, what is the container that holds the resources (groups, apps, sites) an access package can include, and whose ownership you can delegate to resource owners?",
+    "options": {
+      "A": "An access package",
+      "B": "A catalog",
+      "C": "A connected organization",
+      "D": "A review"
+    },
+    "answer": "B",
+    "explanation": "A catalog is the container of resources for access packages, and you can delegate catalog ownership to resource owners. An access package (A) is the requestable bundle inside a catalog. A connected organization (C) represents an external partner. A review (D) is recertification. Trigger: 'container of resources for packages' -> catalog."
+  },
+  {
+    "id": "sc300-32",
+    "tag": "D1 Devices",
+    "question": "Existing on-prem domain-joined Windows devices must also get an Entra identity so they work with Conditional Access, while staying joined to on-prem AD. Which join type?",
+    "options": {
+      "A": "Entra registered",
+      "B": "Entra joined",
+      "C": "Entra hybrid joined",
+      "D": "Re-join all as Entra joined"
+    },
+    "answer": "C",
+    "explanation": "Entra hybrid joined gives on-prem domain-joined devices a synced Entra identity, so they participate in CA while remaining in on-prem AD. Registered (A) is for personal devices. Entra joined (B) drops the on-prem join. Re-joining everything (D) is needless disruption. Trigger: 'keep on-prem domain join + add Entra identity' -> hybrid joined."
+  },
+  {
+    "id": "sc300-46",
+    "tag": "D2 Auth methods",
+    "question": "Users approve Authenticator push prompts reflexively and have been hit by MFA-fatigue attacks. What feature reduces this?",
+    "options": {
+      "A": "Disable Authenticator",
+      "B": "Number matching in Microsoft Authenticator",
+      "C": "SMS fallback",
+      "D": "Longer session lifetime"
+    },
+    "answer": "B",
+    "explanation": "Number matching forces the user to type a number shown on the sign-in screen into Authenticator, defeating blind 'approve' fatigue attacks. Disabling Authenticator (A) removes a strong method. SMS fallback (C) is weaker. Longer sessions (D) reduce prompts but don't address fatigue. Trigger: 'MFA fatigue / blind approvals' -> number matching."
+  },
+  {
+    "id": "sc300-68",
+    "tag": "D3 API permissions",
+    "question": "A daemon service with no signed-in user must read all mailboxes via Microsoft Graph. Which type of API permission, and how is it consented?",
+    "options": {
+      "A": "Delegated permission; user consent",
+      "B": "Application permission; admin consent",
+      "C": "Delegated permission; admin consent",
+      "D": "Application permission; user consent"
+    },
+    "answer": "B",
+    "explanation": "No user is present, so the app needs an application permission, which acts as the app itself and requires admin consent. Delegated permissions (A/C) act on behalf of a signed-in user - wrong for a daemon. Application permissions can never be granted by user consent (D). Trigger: 'daemon / no signed-in user' -> application permission + admin consent."
+  },
+  {
+    "id": "sc300-83",
+    "tag": "D4 Entitlement management",
+    "question": "You want partners from specific external tenants/domains to be able to request access packages, with their guests governed. What do you define in entitlement management?",
+    "options": {
+      "A": "A catalog",
+      "B": "A connected organization",
+      "C": "A dynamic group",
+      "D": "A named location"
+    },
+    "answer": "B",
+    "explanation": "A connected organization represents an external partner (by tenant or domain) so its users can request packages and be governed. A catalog (A) holds resources. A dynamic group (C) is membership. A named location (D) is a CA network condition. Trigger: 'allow specific external partners to request' -> connected organization."
+  },
+  {
+    "id": "sc300-33",
+    "tag": "D1 Groups",
+    "question": "You need a group purely to control access to resources (apps, SharePoint permissions), with no shared mailbox or Teams. Which group type?",
+    "options": {
+      "A": "Microsoft 365 group",
+      "B": "Security group",
+      "C": "Distribution list",
+      "D": "Mail-enabled security group"
+    },
+    "answer": "B",
+    "explanation": "Security groups control access to resources and fit when you don't need collaboration features. Microsoft 365 groups (A) add a mailbox, SharePoint and Teams - overkill. A distribution list (C) is email-only, not access control. Mail-enabled security (D) adds email you don't need. Trigger: 'control access only, no collaboration' -> security group."
+  },
+  {
+    "id": "sc300-47",
+    "tag": "D2 Auth methods",
+    "question": "Your agency must authenticate users with smart-card certificates directly against Entra ID, without federation. Which feature?",
+    "options": {
+      "A": "AD FS only",
+      "B": "Microsoft Entra certificate-based authentication (CBA)",
+      "C": "OATH tokens",
+      "D": "Seamless SSO"
+    },
+    "answer": "B",
+    "explanation": "Entra CBA authenticates X.509 certificates (smart cards) directly against Entra ID - no AD FS needed. AD FS (A) is the legacy federated way you're avoiding. OATH tokens (C) are time-based codes, not certificates. Seamless SSO (D) is unrelated. Trigger: 'smart-card/certificate auth without federation' -> Entra CBA."
+  },
+  {
+    "id": "sc300-69",
+    "tag": "D3 App roles",
+    "question": "A developer needs your custom app to issue 'Reader' and 'Writer' authorization values inside the tokens it receives, so the app can enforce them. What do you define?",
+    "options": {
+      "A": "Custom security attributes",
+      "B": "App roles in the app registration",
+      "C": "Administrative units",
+      "D": "Entra built-in roles"
+    },
+    "answer": "B",
+    "explanation": "App roles defined on the app registration are emitted in tokens (roles claim) for the app to enforce authorization. Custom security attributes (A) are directory metadata, not token claims. AUs (C) scope admin. Entra built-in roles (D) are directory admin roles, not app-specific. Trigger: 'app-specific roles in tokens' -> app roles."
+  },
+  {
+    "id": "sc300-84",
+    "tag": "D4 Terms of use",
+    "question": "Before granting access via an access package, users must accept a legal agreement, with acceptance recorded. What do you attach?",
+    "options": {
+      "A": "A Conditional Access session control",
+      "B": "A terms of use (ToU) policy",
+      "C": "An access review",
+      "D": "A custom role"
+    },
+    "answer": "B",
+    "explanation": "A terms of use policy presents an agreement users must accept (recorded for audit) and can gate access packages or CA. A CA session control (A) governs in-session behavior, not legal acceptance. An access review (C) recertifies. A custom role (D) defines permissions. Trigger: 'must accept an agreement, recorded' -> terms of use."
+  },
+  {
+    "id": "sc300-34",
+    "tag": "D1 External identities",
+    "question": "Security wants only specific admins - not regular users - to be able to invite external guests. Where do you configure this?",
+    "options": {
+      "A": "Conditional Access",
+      "B": "External collaboration settings (guest invite settings)",
+      "C": "Cross-tenant synchronization",
+      "D": "Entitlement management catalog"
+    },
+    "answer": "B",
+    "explanation": "External collaboration settings control who can invite guests (everyone, only admins/specific roles, or no one) and guest permissions. CA (A) governs sign-in conditions. CTS (C) auto-provisions across owned tenants. A catalog (D) organises resources. Trigger: 'who can invite guests' -> external collaboration settings."
+  },
+  {
+    "id": "sc300-48",
+    "tag": "D2 Auth methods",
+    "question": "You still use the legacy MFA and SSPR method settings and want to manage all authentication methods from one modern place. What should you migrate to?",
+    "options": {
+      "A": "Security defaults",
+      "B": "The Authentication methods policy",
+      "C": "Per-user MFA",
+      "D": "Conditional Access"
+    },
+    "answer": "B",
+    "explanation": "The Authentication methods policy is the modern single place to enable/scope methods, replacing the legacy MFA and SSPR method settings (which Microsoft is retiring). Security defaults (A) are all-or-nothing. Per-user MFA (C) is legacy. CA (D) enforces access, it doesn't define which methods exist. Trigger: 'consolidate legacy MFA/SSPR method settings' -> Authentication methods policy."
+  },
+  {
+    "id": "sc300-70",
+    "tag": "D3 Enterprise apps",
+    "question": "You integrated a SaaS app and must control which users/groups can access it and what role each gets. Where?",
+    "options": {
+      "A": "App registration -> API permissions",
+      "B": "Enterprise application -> Users and groups (assignment)",
+      "C": "Conditional Access only",
+      "D": "Managed identity assignment"
+    },
+    "answer": "B",
+    "explanation": "Enterprise application -> Users and groups is where you assign who can access the app and which app role they get (with 'assignment required'). API permissions (A) govern what the app can call, not who uses it. CA (C) adds conditions but isn't the assignment surface. Managed identities (D) are for workloads. Trigger: 'who can access this app + which role' -> enterprise app users and groups."
+  },
+  {
+    "id": "sc300-85",
+    "tag": "D4 Entitlement management",
+    "question": "When a guest's access package expires and they have no other access, entitlement management should remove their guest account automatically. What does this capability manage?",
+    "options": {
+      "A": "Sign-in risk",
+      "B": "The external user lifecycle",
+      "C": "PIM activation",
+      "D": "Token lifetime"
+    },
+    "answer": "B",
+    "explanation": "Auto-removing a guest's access (and the guest object when nothing is left) at expiry is governing the external user lifecycle. Sign-in risk (A) is ID Protection. PIM activation (C) is privilege elevation. Token lifetime (D) is session config. Trigger: 'auto-remove guest at package expiry' -> external user lifecycle."
+  },
+  {
+    "id": "sc300-35",
+    "tag": "D1 External identities",
+    "question": "Partner guests should not have to repeat MFA in your tenant - you want to accept the MFA they already completed in their home tenant. What do you configure?",
+    "options": {
+      "A": "A CA policy excluding guests from MFA",
+      "B": "Inbound trust settings in cross-tenant access settings (trust partner MFA)",
+      "C": "Cross-tenant synchronization",
+      "D": "Per-user MFA for guests"
+    },
+    "answer": "B",
+    "explanation": "Inbound trust settings in cross-tenant access let you trust the partner tenant's MFA (and compliant/hybrid-joined device) claims, so guests aren't re-challenged. Excluding guests from MFA (A) removes MFA rather than trusting it - insecure. CTS (C) provisions accounts. Per-user MFA (D) doesn't trust external claims. Trigger: 'trust partner's MFA claims' -> cross-tenant access inbound trust."
+  },
+  {
+    "id": "sc300-49",
+    "tag": "D2 SSPR",
+    "question": "Users must reset their own passwords from the web, and the new password must be written back to on-prem AD. What two things are required?",
+    "options": {
+      "A": "SSPR only",
+      "B": "SSPR plus password writeback",
+      "C": "Password Protection plus PHS",
+      "D": "PTA plus Seamless SSO"
+    },
+    "answer": "B",
+    "explanation": "Self-service reset is SSPR; pushing the change to on-prem AD requires password writeback (a Connect Sync feature, needs P1). SSPR alone (A) won't update on-prem. Password Protection (C) bans weak passwords, unrelated to reset. PTA + SSO (D) are auth, not reset writeback. Trigger: 'reset own password + reach on-prem AD' -> SSPR + writeback."
+  },
+  {
+    "id": "sc300-71",
+    "tag": "D3 Provisioning",
+    "question": "You want users automatically created and deactivated in a SaaS app as their Entra group membership changes. Which feature?",
+    "options": {
+      "A": "Single sign-on (SAML)",
+      "B": "Automatic user provisioning (SCIM)",
+      "C": "Conditional Access",
+      "D": "App roles"
+    },
+    "answer": "B",
+    "explanation": "Automatic user provisioning uses SCIM to create, update, and deactivate accounts in the SaaS app based on Entra assignment. SSO (A) handles sign-in, not account lifecycle. CA (C) governs access conditions. App roles (D) define authorization values. Trigger: 'auto-create/deactivate accounts in SaaS' -> SCIM provisioning."
+  },
+  {
+    "id": "sc300-86",
+    "tag": "D4 Separation of duties",
+    "question": "You must prevent a user who already holds access package A from also requesting package B (incompatible duties). Which entitlement management feature?",
+    "options": {
+      "A": "Terms of use",
+      "B": "Separation of duties (incompatible access packages)",
+      "C": "An access review",
+      "D": "A dynamic group"
+    },
+    "answer": "B",
+    "explanation": "Separation of duties lets you mark access packages (or groups) as incompatible, so holding one blocks requesting another. Terms of use (A) is legal acceptance. An access review (C) recertifies existing access. A dynamic group (D) is membership. Trigger: 'block incompatible/conflicting access requests' -> separation of duties."
+  },
+  {
+    "id": "sc300-36",
+    "tag": "D1 External identities",
+    "question": "You want users in a partner tenant to access shared Teams shared channels without being added as guests in your directory. Which capability?",
+    "options": {
+      "A": "B2B collaboration (guest accounts)",
+      "B": "B2B direct connect",
+      "C": "Cross-tenant synchronization",
+      "D": "Application Proxy"
+    },
+    "answer": "B",
+    "explanation": "B2B direct connect establishes mutual trust for shared resources (notably Teams shared channels) without creating guest objects in your tenant. B2B collaboration (A) does create guest accounts. CTS (C) provisions B2B users. App Proxy (D) publishes on-prem web apps. Trigger: 'Teams shared channels / no guest account' -> B2B direct connect."
+  },
+  {
+    "id": "sc300-50",
+    "tag": "D2 Password protection",
+    "question": "You want to block weak and company-specific passwords not just in the cloud but also when users change them directly in on-prem AD. What do you deploy?",
+    "options": {
+      "A": "SSPR",
+      "B": "Entra Password Protection with the DC agent on domain controllers",
+      "C": "Smart lockout",
+      "D": "Conditional Access"
+    },
+    "answer": "B",
+    "explanation": "Entra Password Protection enforces global + custom banned lists; installing the DC agent extends that enforcement to on-prem AD password changes. SSPR (A) is reset, not banned-word enforcement. Smart lockout (C) limits brute force, not weak-word choice. CA (D) governs access, not password content. Trigger: 'ban weak passwords on-prem too' -> Password Protection + DC agent."
+  },
+  {
+    "id": "sc300-72",
+    "tag": "D3 Defender for Cloud Apps",
+    "question": "You must block file downloads from a SaaS app on unmanaged devices in real time during the session. What combination?",
+    "options": {
+      "A": "A dynamic group",
+      "B": "Conditional Access app control routing the session to Defender for Cloud Apps, with a session policy",
+      "C": "App registration API permissions",
+      "D": "An access package"
+    },
+    "answer": "B",
+    "explanation": "CA app control routes the session through Defender for Cloud Apps, where a session policy enforces real-time controls like blocking downloads on unmanaged devices. A dynamic group (A), API permissions (C), and access packages (D) can't do real-time in-session control. Trigger: 'block download in real time / unmanaged device' -> CA app control + MDA session policy."
+  },
+  {
+    "id": "sc300-87",
+    "tag": "D4 Access reviews",
+    "question": "For a recurring review of a sensitive group, you want each member's own manager to decide whether they keep access. Which reviewer setting?",
+    "options": {
+      "A": "Group owners",
+      "B": "Managers of the users being reviewed",
+      "C": "Selected users",
+      "D": "Self-review"
+    },
+    "answer": "B",
+    "explanation": "Access reviews can set 'managers' as reviewers, so each member's manager attests to their access. Group owners (A), selected users (C), and self-review (D) are other valid reviewer options but don't match 'each member's own manager'. Trigger: 'each user's manager decides' -> manager as reviewer."
+  },
+  {
+    "id": "sc300-37",
+    "tag": "D1 External IdP",
+    "question": "Guests from a partner that uses a non-Microsoft identity provider should sign in with their existing IdP. Which external identity feature enables this?",
+    "options": {
+      "A": "Google federation only",
+      "B": "SAML/WS-Fed identity provider federation",
+      "C": "Cross-tenant access settings",
+      "D": "Seamless SSO"
+    },
+    "answer": "B",
+    "explanation": "SAML/WS-Fed IdP federation lets guests authenticate with a partner's non-Microsoft IdP. Google/Facebook federation (A) covers only those consumer IdPs. Cross-tenant access settings (C) govern Entra-to-Entra trust, not third-party IdPs. Seamless SSO (D) is an on-prem hybrid convenience. Trigger: 'partner's own non-Microsoft IdP' -> SAML/WS-Fed federation."
+  },
+  {
+    "id": "sc300-51",
+    "tag": "D2 Conditional Access",
+    "question": "Audit shows many password-spray attacks arriving over legacy protocols (IMAP, POP, SMTP AUTH) that can't do MFA. What's the most effective single control?",
+    "options": {
+      "A": "Require MFA for all users",
+      "B": "A Conditional Access policy that blocks legacy authentication",
+      "C": "Smart lockout",
+      "D": "Disable SSPR"
+    },
+    "answer": "B",
+    "explanation": "Legacy auth protocols can't perform modern MFA, so attackers target them; a CA policy blocking legacy authentication closes that door. Requiring MFA (A) doesn't help because legacy clients bypass the MFA prompt entirely. Smart lockout (C) slows but doesn't stop it. SSPR (D) is unrelated. Trigger: 'legacy protocols bypass MFA' -> CA block legacy auth."
+  },
+  {
+    "id": "sc300-73",
+    "tag": "D3 Defender for Cloud Apps",
+    "question": "Security wants to find and revoke risky third-party OAuth apps that users granted broad Graph permissions to. Which capability?",
+    "options": {
+      "A": "Cloud discovery",
+      "B": "OAuth app policies in Defender for Cloud Apps",
+      "C": "Conditional Access",
+      "D": "Access reviews"
+    },
+    "answer": "B",
+    "explanation": "OAuth app policies in Defender for Cloud Apps surface and let you revoke over-permissioned or risky OAuth grants. Cloud discovery (A) finds shadow IT from traffic, not OAuth grants specifically. CA (C) governs sign-in. Access reviews (D) recertify user access, not app grants. Trigger: 'risky OAuth grants / over-permissioned apps' -> MDA OAuth app policies."
+  },
+  {
+    "id": "sc300-88",
+    "tag": "D4 Access reviews",
+    "question": "In an access review with auto-apply enabled, what should you set so users whose access isn't reviewed in time are removed rather than left in place?",
+    "options": {
+      "A": "'No change' if not reviewed",
+      "B": "'Remove access' if reviewers don't respond",
+      "C": "Disable auto-apply",
+      "D": "Extend the review indefinitely"
+    },
+    "answer": "B",
+    "explanation": "Set the 'if reviewers don't respond' action to Remove access, so non-reviewed access is revoked on auto-apply. 'No change' (A) leaves stale access. Disabling auto-apply (C) means decisions aren't enforced automatically. Extending (D) defeats the purpose. Trigger: 'remove stale if not reviewed' -> set not-responded action to Remove."
+  },
+  {
+    "id": "sc300-38",
+    "tag": "D1 Hybrid identity",
+    "question": "Which statement about Microsoft Entra Seamless SSO is correct?",
+    "options": {
+      "A": "It is a standalone authentication method",
+      "B": "It works on top of PHS or PTA to give silent sign-in on domain-joined corporate-network devices",
+      "C": "It requires AD FS",
+      "D": "It removes the need for any authentication method"
+    },
+    "answer": "B",
+    "explanation": "Seamless SSO layers on PHS or PTA and gives silent Kerberos-based sign-in on domain-joined devices on the corporate network. It is not standalone (A/D) - it needs an underlying method to validate credentials. It does not require AD FS (C); federation has its own SSO. Trigger: 'silent sign-in layered on PHS/PTA' -> Seamless SSO."
+  },
+  {
+    "id": "sc300-52",
+    "tag": "D2 Conditional Access",
+    "question": "Access to a sensitive app must be allowed only from devices that Intune marks compliant. Which CA grant control?",
+    "options": {
+      "A": "Require MFA",
+      "B": "Require device to be marked compliant",
+      "C": "Require approved client app",
+      "D": "Require password change"
+    },
+    "answer": "B",
+    "explanation": "'Require device to be marked compliant' depends on Intune compliance state - exactly this requirement. Require MFA (A) is a different control. Approved client app (C) requires an MDM/MAM-approved app, not compliance. Password change (D) is a remediation. Trigger: 'Intune compliant device' -> require compliant device grant."
+  },
+  {
+    "id": "sc300-74",
+    "tag": "D3 App registration",
+    "question": "To reduce sprawl and risk, you want to stop regular users from registering new applications. Where do you change this?",
+    "options": {
+      "A": "Conditional Access",
+      "B": "User settings -> 'Users can register applications' set to No",
+      "C": "Custom security attributes",
+      "D": "PIM"
+    },
+    "answer": "B",
+    "explanation": "The tenant user setting 'Users can register applications' (No) removes that default ability from non-admins. CA (A) governs sign-in conditions. Custom security attributes (C) are metadata. PIM (D) is privilege elevation. Trigger: 'stop users registering apps' -> user settings toggle."
+  },
+  {
+    "id": "sc300-89",
+    "tag": "D4 Access reviews",
+    "question": "Compliance wants a recurring attestation of who holds privileged Entra roles like Global Administrator. Which feature?",
+    "options": {
+      "A": "PIM activation",
+      "B": "Access reviews for Entra (PIM) role assignments",
+      "C": "Entitlement management",
+      "D": "Identity Secure Score"
+    },
+    "answer": "B",
+    "explanation": "Access reviews can target Entra role assignments (including via PIM) to recertify privileged role holders on a schedule. PIM activation (A) is just-in-time elevation, not attestation. Entitlement management (C) grants bundles. Secure Score (D) is posture scoring. Trigger: 'recertify who holds privileged roles' -> access review of role assignments."
+  },
+  {
+    "id": "sc300-39",
+    "tag": "D1 Hybrid identity",
+    "question": "Operations wants alerting and monitoring on the health of your directory synchronization and AD FS infrastructure. Which tool?",
+    "options": {
+      "A": "Identity Secure Score",
+      "B": "Microsoft Entra Connect Health",
+      "C": "Log Analytics",
+      "D": "Connect Sync staging mode"
+    },
+    "answer": "B",
+    "explanation": "Entra Connect Health monitors and alerts on sync and AD FS health. Identity Secure Score (A) measures security posture, not sync health. Log Analytics (C) is a general log/query store. Staging mode (D) is a Connect Sync standby configuration, not monitoring. Trigger: 'monitor sync / AD FS health' -> Connect Health."
+  },
+  {
+    "id": "sc300-53",
+    "tag": "D2 Conditional Access",
+    "question": "On personal (unmanaged) phones, you want corporate data accessible only inside apps protected by an app protection policy, without enrolling the device in MDM. Which grant control?",
+    "options": {
+      "A": "Require compliant device",
+      "B": "Require hybrid joined device",
+      "C": "Require app protection policy",
+      "D": "Require MFA"
+    },
+    "answer": "C",
+    "explanation": "Require app protection policy (MAM) protects data at the app level on unenrolled BYOD devices. Require compliant (A) and hybrid joined (B) both need device management/enrollment that BYOD users won't do. MFA (D) doesn't constrain where data lands. Trigger: 'BYOD, no MDM enrollment, protect data in-app' -> require app protection policy."
+  },
+  {
+    "id": "sc300-75",
+    "tag": "D3 App consent",
+    "question": "An app needs a permission that affects all users and only an admin can approve it for the whole tenant. What is this called?",
+    "options": {
+      "A": "User consent",
+      "B": "Admin consent (granted tenant-wide)",
+      "C": "App role assignment",
+      "D": "Conditional Access grant"
+    },
+    "answer": "B",
+    "explanation": "Admin consent grants a permission on behalf of the entire tenant - required for application permissions and high-risk delegated permissions. User consent (A) is per-user and limited to low-risk permissions. App role assignment (C) is authorization within an app. A CA grant (D) is an access condition. Trigger: 'approve for the whole tenant' -> admin consent."
+  },
+  {
+    "id": "sc300-90",
+    "tag": "D4 PIM",
+    "question": "When configuring a PIM eligible role, you want activation to require approval, MFA, justification, and a max duration. Where do you set these?",
+    "options": {
+      "A": "In the role's assignment",
+      "B": "In the PIM role settings (activation settings)",
+      "C": "In Conditional Access",
+      "D": "In the access package policy"
+    },
+    "answer": "B",
+    "explanation": "PIM role settings define activation requirements - approval, MFA, justification, and maximum activation duration. The assignment (A) just makes a user eligible/active; the conditions live in role settings. CA (C) governs sign-in, not activation requirements. Access package policy (D) is entitlement management. Trigger: 'require MFA/approval/time-limit on activation' -> PIM role settings."
+  },
+  {
+    "id": "sc300-40",
+    "tag": "D1 Hybrid identity",
+    "question": "You're migrating from AD FS to cloud authentication and want to move a pilot group to PHS while everyone else stays on federation, before cutting over. What feature supports this?",
+    "options": {
+      "A": "Staged rollout",
+      "B": "Pass-through authentication only",
+      "C": "Cross-tenant synchronization",
+      "D": "Seamless SSO"
+    },
+    "answer": "A",
+    "explanation": "Staged rollout migrates selected groups from federation to cloud auth (PHS or PTA) for testing before a full cutover. PTA-only (B) isn't the migration mechanism. CTS (C) is tenant-to-tenant provisioning. Seamless SSO (D) is a sign-in convenience. Trigger: 'pilot group off federation before cutover' -> staged rollout."
+  },
+  {
+    "id": "sc300-54",
+    "tag": "D2 Conditional Access",
+    "question": "You want a CA policy that treats your office IP ranges as trusted and requires MFA from everywhere else. What do you define first?",
+    "options": {
+      "A": "Authentication context",
+      "B": "Named locations (with your trusted IP ranges)",
+      "C": "A dynamic group",
+      "D": "Smart lockout"
+    },
+    "answer": "B",
+    "explanation": "Named locations define IP ranges (or countries) you can mark trusted, then reference as a CA condition. Authentication context (A) targets sensitive actions, not networks. A dynamic group (C) is membership, not location. Smart lockout (D) is brute-force defense. Trigger: 'trusted office IPs vs elsewhere' -> named locations."
+  },
+  {
+    "id": "sc300-76",
+    "tag": "D3 Application Proxy",
+    "question": "Application Proxy is publishing an on-prem web app. What on-prem component actually brokers the traffic to the internal app?",
+    "options": {
+      "A": "A managed identity",
+      "B": "The Application Proxy connector",
+      "C": "A domain controller agent",
+      "D": "The GSA client"
+    },
+    "answer": "B",
+    "explanation": "Application Proxy connectors are lightweight on-prem agents that make outbound connections and broker traffic to the internal web app - no inbound ports needed. A managed identity (A) is for Azure workloads. The DC agent (C) is for Password Protection. The GSA client (D) is for Global Secure Access endpoints. Trigger: 'on-prem agent for App Proxy' -> connector."
+  },
+  {
+    "id": "sc300-91",
+    "tag": "D4 PIM",
+    "question": "You want just-in-time, approved membership of a privileged security group (used to grant access to several resources at once), not just directory roles. Which capability?",
+    "options": {
+      "A": "Access reviews",
+      "B": "PIM for Groups",
+      "C": "Entitlement management",
+      "D": "A dynamic group"
+    },
+    "answer": "B",
+    "explanation": "PIM for Groups brings eligible/active, JIT, approved membership (and ownership) to security/M365 groups, extending PIM beyond directory roles. Access reviews (A) recertify. Entitlement management (C) is request/approval for resource bundles, not JIT elevation. A dynamic group (D) auto-populates and can't be activated JIT. Trigger: 'JIT activation of group membership' -> PIM for Groups."
+  },
+  {
+    "id": "sc300-41",
+    "tag": "D1 Licensing",
+    "question": "You want Microsoft 365 licenses assigned automatically to anyone who joins a particular group and removed when they leave. What do you use?",
+    "options": {
+      "A": "Per-user license assignment",
+      "B": "Group-based licensing",
+      "C": "A dynamic group only",
+      "D": "Entitlement management"
+    },
+    "answer": "B",
+    "explanation": "Group-based licensing assigns and removes licenses automatically based on group membership. Per-user assignment (A) is manual. A dynamic group (C) automates membership but doesn't assign licenses by itself - you combine it WITH group-based licensing. Entitlement management (D) governs access packages. Trigger: 'auto-assign licenses by group' -> group-based licensing."
+  },
+  {
+    "id": "sc300-55",
+    "tag": "D2 Conditional Access",
+    "question": "Before enforcing a new CA policy you must see exactly who it WOULD affect, without blocking anyone. What do you use?",
+    "options": {
+      "A": "Enforce it and watch the logs",
+      "B": "Report-only mode (and the What If tool)",
+      "C": "A break-glass account",
+      "D": "Continuous access evaluation"
+    },
+    "answer": "B",
+    "explanation": "Report-only mode logs what the policy would have done without enforcing, and What If simulates specific users/conditions. Enforcing first (A) risks the lockouts you're avoiding. Break-glass (C) is for recovery, not testing. CAE (D) is about revocation timing. Trigger: 'see impact without blocking' -> report-only + What If."
+  },
+  {
+    "id": "sc300-77",
+    "tag": "D3 Workload identity federation",
+    "question": "A GitHub Actions workflow must authenticate to Azure to deploy, without storing any client secret in the repo. What's the recommended approach?",
+    "options": {
+      "A": "Store a client secret in a repo secret",
+      "B": "Configure a federated identity credential (workload identity federation / OIDC) on the app registration",
+      "C": "Use a managed identity inside GitHub",
+      "D": "Share a user password"
+    },
+    "answer": "B",
+    "explanation": "Workload identity federation lets an external workload (GitHub Actions) exchange its OIDC token for Azure access via a federated credential on the app registration - no stored secret. Storing a client secret (A) is the secret-in-repo risk you're avoiding. Managed identities (C) are for Azure-hosted resources, not GitHub runners. Sharing a password (D) is an anti-pattern. Trigger: 'external CI to Azure, no stored secret' -> federated credential (OIDC)."
+  },
+  {
+    "id": "sc300-92",
+    "tag": "D4 PIM",
+    "question": "You need just-in-time elevation for an Azure subscription's Contributor role (an Azure RBAC role), with approval. Which PIM scope?",
+    "options": {
+      "A": "PIM for Entra roles",
+      "B": "PIM for Azure resources",
+      "C": "PIM for Groups",
+      "D": "Conditional Access"
+    },
+    "answer": "B",
+    "explanation": "PIM for Azure resources manages JIT activation of Azure RBAC roles (like Contributor) on subscriptions/resource groups/resources. PIM for Entra roles (A) covers directory roles, not Azure RBAC. PIM for Groups (C) is group membership. CA (D) doesn't time-box RBAC. Trigger: 'JIT for Azure RBAC role' -> PIM for Azure resources."
+  },
+  {
+    "id": "sc300-42",
+    "tag": "D1 Roles",
+    "question": "An admin must assign and manage Entra role assignments and PIM settings for others, without being Global Administrator. Which role?",
+    "options": {
+      "A": "User Administrator",
+      "B": "Privileged Role Administrator",
+      "C": "Security Administrator",
+      "D": "Helpdesk Administrator"
+    },
+    "answer": "B",
+    "explanation": "Privileged Role Administrator manages role assignments and PIM without the full power of Global Admin. User Administrator (A) manages users, not role assignments broadly. Security Administrator (C) manages security features, not role assignments. Helpdesk Administrator (D) only resets some passwords. Trigger: 'manage role assignments, not Global Admin' -> Privileged Role Administrator."
+  },
+  {
+    "id": "sc300-56",
+    "tag": "D2 Conditional Access",
+    "question": "For a high-risk app you want to force users to reauthenticate every 4 hours rather than relying on long-lived sessions. Which session control?",
+    "options": {
+      "A": "Persistent browser session",
+      "B": "Sign-in frequency",
+      "C": "Continuous access evaluation",
+      "D": "Authentication context"
+    },
+    "answer": "B",
+    "explanation": "Sign-in frequency sets how often users must reauthenticate (e.g., every 4 hours). Persistent browser (A) does the opposite, keeping them signed in. CAE (C) revokes on events, not on a fixed timer. Authentication context (D) triggers step-up for sensitive actions. Trigger: 'reauth every N hours' -> sign-in frequency."
+  },
+  {
+    "id": "sc300-78",
+    "tag": "D3 Enterprise apps SSO",
+    "question": "You're integrating a modern SaaS app that supports OpenID Connect. Which single sign-on option should you generally prefer for it?",
+    "options": {
+      "A": "Password-based SSO",
+      "B": "OIDC-based SSO",
+      "C": "Linked SSO",
+      "D": "Header-based SSO"
+    },
+    "answer": "B",
+    "explanation": "For a modern app that supports it, OIDC-based SSO is the preferred standard (SAML is the alternative when OIDC isn't supported). Password-based SSO (A) just stores/replays credentials - a fallback. Linked SSO (C) is only a link to an externally configured app. Header-based (D) is for specific legacy/proxy scenarios. Trigger: 'modern app, choose SSO' -> OIDC (else SAML)."
+  },
+  {
+    "id": "sc300-93",
+    "tag": "D4 PIM",
+    "question": "PIM flags that there are too many Global Administrators and that some roles are activated too frequently. What is this PIM capability?",
+    "options": {
+      "A": "Access reviews",
+      "B": "PIM security alerts",
+      "C": "Identity Secure Score",
+      "D": "Audit logs only"
+    },
+    "answer": "B",
+    "explanation": "PIM security alerts surface risky conditions like too many Global Admins, roles assigned outside PIM, or roles activated too frequently, with recommended actions. Access reviews (A) recertify access. Identity Secure Score (C) is broader posture scoring. Audit logs (D) record events but don't generate these PIM-specific alerts. Trigger: 'PIM warns too many admins / frequent activation' -> PIM alerts."
+  },
+  {
+    "id": "sc300-43",
+    "tag": "D1 Tenant branding",
+    "question": "You want your corporate logo and a custom background on the Entra sign-in page users see. Where do you configure this?",
+    "options": {
+      "A": "Conditional Access",
+      "B": "Company branding in the tenant",
+      "C": "A custom role",
+      "D": "External collaboration settings"
+    },
+    "answer": "B",
+    "explanation": "Company branding customises the sign-in page (logo, background, text) per tenant and can vary by language. CA (A) governs access conditions. Custom roles (C) define permissions. External collaboration settings (D) govern guests. Trigger: 'customise the sign-in page' -> company branding."
+  },
+  {
+    "id": "sc300-57",
+    "tag": "D2 Protected actions",
+    "question": "You want certain high-impact directory operations (like changing CA policies) to require fresh step-up authentication, beyond normal role permissions. What do you configure?",
+    "options": {
+      "A": "Authentication context alone",
+      "B": "Protected actions",
+      "C": "PIM activation",
+      "D": "Named locations"
+    },
+    "answer": "B",
+    "explanation": "Protected actions require step-up authentication (via authentication context + CA) to perform specific high-risk directory operations, adding a barrier on top of role permissions. Authentication context alone (A) is the mechanism, but 'protected actions' is the feature that binds it to directory operations. PIM (C) gates role activation, not individual operations. Named locations (D) are network conditions. Trigger: 'step-up to perform high-risk directory ops' -> protected actions."
+  },
+  {
+    "id": "sc300-79",
+    "tag": "D3 App registration",
+    "question": "Your custom API must let other apps request scoped delegated access (e.g., 'Orders.Read'). What do you configure on its app registration?",
+    "options": {
+      "A": "App roles only",
+      "B": "Expose an API - define scopes (and an Application ID URI)",
+      "C": "API permissions to Microsoft Graph",
+      "D": "A managed identity"
+    },
+    "answer": "B",
+    "explanation": "'Expose an API' is where you set the Application ID URI and define delegated scopes that client apps can request. App roles (A) are for application-permission/authorization values, not delegated scopes. Adding Graph permissions (C) is about what your app calls, not what it exposes. A managed identity (D) is unrelated. Trigger: 'let other apps request scopes on my API' -> Expose an API / scopes."
+  },
+  {
+    "id": "sc300-94",
+    "tag": "D4 PIM",
+    "question": "A user activates an eligible PIM role that requires approval. Who approves, and what happens until then?",
+    "options": {
+      "A": "Anyone in the tenant; access is immediate",
+      "B": "Designated approvers must approve before activation completes; access is pending until approved",
+      "C": "The user self-approves",
+      "D": "Approval is only logged after access is granted"
+    },
+    "answer": "B",
+    "explanation": "With approval required, designated approvers must approve the request, and the role stays inactive (pending) until they do. Approval isn't open to anyone (A), isn't self-approved (C), and isn't merely after-the-fact logging (D). Trigger: 'eligible role + approval required' -> designated approvers, access pending until approved."
+  },
+  {
+    "id": "sc300-44",
+    "tag": "D1 Bulk operations",
+    "question": "You must create 500 user accounts at once from a spreadsheet. Which is the BEST approach?",
+    "options": {
+      "A": "Create each user manually in the portal",
+      "B": "Bulk create via CSV in the admin center, or PowerShell / Microsoft Graph",
+      "C": "Use a dynamic group",
+      "D": "Use an access package"
+    },
+    "answer": "B",
+    "explanation": "Bulk creation is done via CSV import in the admin center or programmatically with PowerShell / Microsoft Graph. Manual creation (A) doesn't scale. A dynamic group (C) manages membership, not account creation. An access package (D) grants access, it doesn't create users. Trigger: 'create many users at once' -> bulk CSV / PowerShell / Graph."
+  },
+  {
+    "id": "sc300-58",
+    "tag": "D2 ID Protection",
+    "question": "ID Protection raises a user's risk to HIGH (the identity is likely compromised over time). What's the recommended automated remediation via a risk policy?",
+    "options": {
+      "A": "Block the user permanently",
+      "B": "Require a secure password change (self-remediation with MFA)",
+      "C": "Require a compliant device",
+      "D": "Force sign-in frequency"
+    },
+    "answer": "B",
+    "explanation": "High user risk is remediated by requiring a secure password change (with MFA), letting the user self-remediate and clearing the risk. Permanent block (A) is heavier than recommended and not self-healing. Compliant device (C) and sign-in frequency (D) don't address a compromised credential. Trigger: 'high USER risk / identity compromised' -> require secure password change."
+  },
+  {
+    "id": "sc300-80",
+    "tag": "D3 App consent",
+    "question": "You blocked broad user consent, but legitimate users sometimes need apps that exceed the limit. How do you let them request access cleanly?",
+    "options": {
+      "A": "Re-enable unrestricted user consent",
+      "B": "Enable the admin consent workflow so users can request and admins approve",
+      "C": "Tell users to share an admin account",
+      "D": "Disable the apps"
+    },
+    "answer": "B",
+    "explanation": "The admin consent workflow lets users submit a request that designated reviewers approve - a clean path after restricting user consent. Re-enabling unrestricted consent (A) undoes your control. Sharing admin accounts (C) is a serious anti-pattern. Disabling apps (D) blocks legitimate needs. Trigger: 'restricted consent + legitimate exceptions' -> admin consent workflow."
+  },
+  {
+    "id": "sc300-95",
+    "tag": "D4 Monitoring & logs",
+    "question": "You need to investigate authentications performed by a service principal (an app), not interactive users. Which log do you examine?",
+    "options": {
+      "A": "Interactive user sign-ins",
+      "B": "Service principal sign-in logs",
+      "C": "Audit logs",
+      "D": "Provisioning logs"
+    },
+    "answer": "B",
+    "explanation": "Service principal sign-in logs capture app/workload authentications (no user). Interactive sign-ins (A) are human, browser-driven sign-ins. Audit logs (C) record directory changes, not sign-ins. Provisioning logs (D) record SCIM events. Trigger: 'sign-ins by an app/service principal' -> service principal sign-in logs."
+  },
+  {
+    "id": "sc300-59",
+    "tag": "D2 ID Protection",
+    "question": "You want to nudge users who only have weak methods to register Microsoft Authenticator. Which ID Protection feature?",
+    "options": {
+      "A": "Risky sign-in policy",
+      "B": "Registration campaign (nudge)",
+      "C": "Smart lockout",
+      "D": "Access review"
+    },
+    "answer": "B",
+    "explanation": "A registration campaign nudges users during sign-in to set up a stronger method like Authenticator. A risky sign-in policy (A) reacts to risk, it doesn't drive registration. Smart lockout (C) is brute-force defense. Access reviews (D) recertify access. Trigger: 'nudge users to register a strong method' -> registration campaign."
+  },
+  {
+    "id": "sc300-81",
+    "tag": "D3 Enterprise apps",
+    "question": "You want to group related apps under a custom tab on the My Apps portal so users find them easily. What do you use?",
+    "options": {
+      "A": "Administrative units",
+      "B": "Application collections",
+      "C": "Access packages",
+      "D": "Dynamic groups"
+    },
+    "answer": "B",
+    "explanation": "Application collections organise apps into tabs on the My Apps portal for easier discovery. AUs (A) scope admin. Access packages (C) bundle resources for governed requests, a different purpose. Dynamic groups (D) manage membership. Trigger: 'group apps on My Apps portal' -> application collections."
+  },
+  {
+    "id": "sc300-96",
+    "tag": "D4 Monitoring & logs",
+    "question": "You must find who changed a Conditional Access policy and when. Which log?",
+    "options": {
+      "A": "Sign-in logs",
+      "B": "Audit logs",
+      "C": "Provisioning logs",
+      "D": "Identity Secure Score"
+    },
+    "answer": "B",
+    "explanation": "Audit logs record directory changes - who did what and when, including policy modifications. Sign-in logs (A) record authentications, not configuration changes. Provisioning logs (C) track SCIM sync. Secure Score (D) is posture, not an event log. Trigger: 'who changed this config / when' -> audit logs."
+  },
+  {
+    "id": "sc300-60",
+    "tag": "D2 ID Protection",
+    "question": "Security wants to detect and respond to compromised service principals (leaked credentials, anomalous sign-ins) - not just user accounts. What capability covers this?",
+    "options": {
+      "A": "User risk only",
+      "B": "Risky workload identities in ID Protection (Workload Identities Premium)",
+      "C": "Conditional Access named locations",
+      "D": "Access reviews"
+    },
+    "answer": "B",
+    "explanation": "ID Protection's risky workload identities detects compromise signals on service principals/apps (licensed via Workload Identities Premium). User risk (A) covers human identities only. Named locations (C) are a CA condition. Access reviews (D) recertify human access. Trigger: 'compromised service principal / workload identity risk' -> risky workload identities."
+  },
+  {
+    "id": "sc300-97",
+    "tag": "D4 Monitoring & logs",
+    "question": "Automatic SCIM provisioning to a SaaS app is skipping some users. Which log shows per-user provisioning success/failure and reasons?",
+    "options": {
+      "A": "Sign-in logs",
+      "B": "Audit logs",
+      "C": "Provisioning logs",
+      "D": "Risky users"
+    },
+    "answer": "C",
+    "explanation": "Provisioning logs show each user's provisioning outcome (created/updated/skipped/failed) and the reason. Sign-in logs (A) are authentications. Audit logs (B) are directory changes. Risky users (D) is ID Protection. Trigger: 'why did SCIM provisioning skip/fail a user' -> provisioning logs."
+  },
+  {
+    "id": "sc300-61",
+    "tag": "D2 Global Secure Access",
+    "question": "You want a cloud secure web gateway to inspect and filter employees' outbound internet traffic with web content filtering. Which Global Secure Access capability?",
+    "options": {
+      "A": "Private Access",
+      "B": "Internet Access",
+      "C": "Internet Access for Microsoft 365",
+      "D": "Application Proxy"
+    },
+    "answer": "B",
+    "explanation": "GSA Internet Access is the secure web gateway for general outbound internet, including web content filtering. Private Access (A) is ZTNA to private apps. Internet Access for M365 (C) optimises/secures M365 traffic specifically. App Proxy (D) publishes inbound on-prem web apps. Trigger: 'secure web gateway / filter outbound internet' -> GSA Internet Access."
+  },
+  {
+    "id": "sc300-98",
+    "tag": "D4 Monitoring & logs",
+    "question": "Logs are flowing to a Log Analytics workspace. Which table do you query with KQL to analyze interactive user sign-ins?",
+    "options": {
+      "A": "AuditLogs",
+      "B": "SigninLogs",
+      "C": "AzureActivity",
+      "D": "Heartbeat"
+    },
+    "answer": "B",
+    "explanation": "SigninLogs is the table for Entra sign-in events in Log Analytics. AuditLogs (A) holds directory-change events. AzureActivity (C) is Azure resource-level activity, not Entra sign-ins. Heartbeat (D) is agent health. Trigger: 'KQL on sign-ins' -> SigninLogs (AuditLogs for changes)."
+  },
+  {
+    "id": "sc300-62",
+    "tag": "D2 Global Secure Access",
+    "question": "You want Microsoft 365 traffic optimised and protected with tenant restrictions and source-IP restoration via Global Secure Access. Which profile?",
+    "options": {
+      "A": "Private Access",
+      "B": "Internet Access for Microsoft 365",
+      "C": "Application Proxy",
+      "D": "Internet Access (generic)"
+    },
+    "answer": "B",
+    "explanation": "Internet Access for Microsoft 365 is the GSA traffic profile tuned for M365 (optimisation, tenant restrictions, compliant network / source-IP restoration). Private Access (A) is for private apps. App Proxy (C) is inbound publishing. Generic Internet Access (D) handles other web traffic, not the M365-specific optimisations. Trigger: 'optimise/secure M365 traffic specifically' -> Internet Access for M365."
+  },
+  {
+    "id": "sc300-99",
+    "tag": "D4 Monitoring & logs",
+    "question": "Leadership wants reusable, visual dashboards (charts, trends) built on your Entra logs in Log Analytics. Which feature?",
+    "options": {
+      "A": "Diagnostic settings",
+      "B": "Workbooks",
+      "C": "Event Hub",
+      "D": "Access reviews"
+    },
+    "answer": "B",
+    "explanation": "Workbooks provide interactive, reusable visual reports/dashboards over your log data. Diagnostic settings (A) route logs to destinations, they don't visualize. Event Hub (C) streams data out. Access reviews (D) are governance. Trigger: 'visual dashboards over logs' -> workbooks."
+  },
+  {
+    "id": "sc300-63",
+    "tag": "D2 Revoke access",
+    "question": "An employee is terminated immediately. Beyond disabling the account, what stops their existing access tokens from continuing to work right away?",
+    "options": {
+      "A": "Wait for the tokens to expire",
+      "B": "Revoke the user's sessions (and rely on continuous access evaluation)",
+      "C": "Reset SSPR",
+      "D": "Add them to a dynamic group"
+    },
+    "answer": "B",
+    "explanation": "Revoking the user's sessions, combined with CAE, terminates active access near-real-time rather than waiting for token expiry. Waiting (A) leaves an access window. An SSPR reset (C) doesn't necessarily kill live sessions immediately. A dynamic group (D) is irrelevant. Trigger: 'cut off access immediately on termination' -> disable + revoke sessions (CAE)."
+  },
+  {
+    "id": "sc300-100",
+    "tag": "D4 Break-glass",
+    "question": "Besides excluding break-glass accounts from Conditional Access, what's the recommended practice for them?",
+    "options": {
+      "A": "Use them for daily admin work",
+      "B": "Monitor and alert on every sign-in by these accounts",
+      "C": "Federate them",
+      "D": "Give them no roles"
+    },
+    "answer": "B",
+    "explanation": "Break-glass accounts should be tightly monitored - alert on any sign-in, since legitimate use is rare and any use is noteworthy. They must not be used for daily work (A). They should be cloud-only, not federated (C), to avoid dependency on systems that can fail. They do need a privileged role like Global Admin (D) to be useful in an emergency. Trigger: 'break-glass best practice beyond CA exclusion' -> monitor/alert on sign-ins."
+  },
+  {
+    "id": "sc300-64",
+    "tag": "D2 Conditional Access",
+    "question": "You must apply a stricter policy only to sign-ins from iOS and Android mobile apps. Which CA condition targets this?",
+    "options": {
+      "A": "Sign-in risk",
+      "B": "Device platform (and client apps) condition",
+      "C": "Named locations",
+      "D": "User risk"
+    },
+    "answer": "B",
+    "explanation": "The device platform condition targets OS (iOS, Android, Windows...), and the client apps condition distinguishes browser vs mobile/desktop apps - together they scope to mobile app sign-ins. Sign-in risk (A) and user risk (D) are risk signals, not platform. Named locations (C) target networks. Trigger: 'target specific OS / app type' -> device platform + client apps conditions."
+  }
+]
