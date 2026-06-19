@@ -4,10 +4,14 @@
 The scheduler runs this every 15 minutes across the window. Once per day this
 script deterministically chooses one random minute inside each of five ~90-minute
 blocks (so: 5 pushes/day, well spaced, unpredictable day to day). On each run it
-checks whether "now" is one of today's chosen times; if not, it exits instantly.
+checks whether "now" is at or past one of today's chosen times AND that block has
+not already fired today; if neither, it exits instantly.
 
-No saved state: the daily choices are derived from the date, so every run that day
-computes the same five times.
+State: a small state.json records today's date and which blocks have already
+fired. When the stored date is not today, the fired list resets (daily reset).
+The workflow restores/saves state.json via the Actions cache (keyed by date),
+so it survives between runs without committing to the repo. A date-keyed cache
+miss at midnight gives the daily reset for free.
 """
 import hashlib
 import json
@@ -29,6 +33,7 @@ SLOTS_PER_DAY = 5
 BLOCKS = [(0, 5), (6, 11), (12, 17), (18, 23), (24, 30)]
 
 here = pathlib.Path(__file__).parent
+STATE_PATH = here / "state.json"
 questions = json.loads((here / "questions.json").read_text(encoding="utf-8"))
 n = len(questions)
 
@@ -37,6 +42,23 @@ def chosen_index(date_ordinal: int, block: int, lo: int, hi: int) -> int:
     """Deterministic 'random' grid index within [lo, hi] for a given day+block."""
     h = hashlib.sha256(f"{date_ordinal}:{block}".encode()).hexdigest()
     return lo + (int(h, 16) % (hi - lo + 1))
+
+
+def load_state(today_iso: str) -> dict:
+    """Read state.json, resetting fired[] if the stored date is not today."""
+    try:
+        state = json.loads(STATE_PATH.read_text(encoding="utf-8"))
+    except (FileNotFoundError, json.JSONDecodeError):
+        state = {}
+    if state.get("date") != today_iso:
+        # New day (or no/corrupt state): reset.
+        state = {"date": today_iso, "fired": []}
+    state.setdefault("fired", [])
+    return state
+
+
+def save_state(state: dict) -> None:
+    STATE_PATH.write_text(json.dumps(state, indent=2) + "\n", encoding="utf-8")
 
 
 def send(slot: int) -> None:
@@ -62,12 +84,16 @@ def send(slot: int) -> None:
         print(f"SENT ntfy {resp.status} | slot={slot} | id={q['id']} | index={counter % n}")
 
 
-# Manual test path: FORCE_SLOT bypasses the random gate and pushes immediately.
-if FORCE_SLOT is not None:
-    send(int(FORCE_SLOT))
+# Manual test path: FORCE_SLOT bypasses the gate and pushes immediately.
+# Note: on scheduled runs the runner sets FORCE_SLOT to "" (empty string), not
+# None, so we test truthiness rather than `is not None`.
+if FORCE_SLOT and FORCE_SLOT.strip():
+    send(int(FORCE_SLOT.strip()))
     sys.exit(0)
 
-# Random gate. Round "now" to the nearest 15-min grid point to absorb scheduler drift.
+# State-file gate. Fire if now is at or past today's target for this block and
+# the block hasn't already fired today. Round "now" to the nearest 15-min grid
+# point to absorb scheduler drift.
 now = datetime.datetime.now(datetime.timezone.utc)
 mins = now.hour * 60 + now.minute
 idx = round(mins / 15)
@@ -80,9 +106,22 @@ if block is None:
     print(f"skip: no block for idx={idx}")
     sys.exit(0)
 
+today_iso = now.date().isoformat()
+state = load_state(today_iso)
+
+if block in state["fired"]:
+    print(f"skip: block {block} already fired today")
+    save_state(state)  # rewrite to ensure a possible date-reset is persisted
+    sys.exit(0)
+
 lo, hi = BLOCKS[block]
 target = chosen_index(now.date().toordinal(), block, lo, hi)
-if idx == target:
+
+if idx >= target:
     send(block)
+    state["fired"].append(block)
+    save_state(state)
+    print(f"fired: block {block} at idx={idx} (target={target})")
 else:
-    print(f"skip: idx={idx} not today's pick for block {block} (target={target})")
+    print(f"skip: idx={idx} before today's target for block {block} (target={target})")
+    save_state(state)  # persist any date reset even when not firing
