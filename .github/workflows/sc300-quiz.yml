@@ -2,27 +2,59 @@ name: SC-300 push quiz
 
 on:
   schedule:
-    # Runs a quick check every 15 minutes across the window 00:00-07:30 UTC,
-    # which is 08:00-15:30 Perth time (AWST, UTC+8, no daylight saving).
-    # The script itself decides, once per day, the 5 random times to actually push;
-    # every other run exits in about a second. "1-5" = Mon-Fri (use "*" for all days).
-    - cron: "0,15,30,45 0-6 * * 1-5"
-    - cron: "0,15,30 7 * * 1-5"
+    # Every 15 minutes during 00:00-07:30 UTC == 08:00-15:30 Perth (AWST, UTC+8).
+    # Runs every day of the week. The script's own grid guard (idx 0..30) trims
+    # anything past 07:30 UTC, so 5 well-spaced pushes land inside 08:00-15:30.
+    - cron: "*/15 0-7 * * *"
   workflow_dispatch:
     inputs:
-      test_slot:
-        description: "Send a test question now from this slot (0-4)"
+      force_slot:
+        description: "Force a specific slot 0-4 (leave blank for normal gate)"
         required: false
-        default: "0"
+        default: ""
+
+# Serialize runs so two near-simultaneous crons don't race on cache state.
+concurrency:
+  group: sc300-push
+  cancel-in-progress: false
 
 jobs:
   push:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
+
+      # Compute today's date (UTC) for the cache key, and a unique save key.
+      - name: Compute cache keys
+        id: keys
+        run: |
+          DATE=$(date -u +%F)
+          echo "date=$DATE" >> "$GITHUB_OUTPUT"
+          echo "save_key=quiz-state-$DATE-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}" >> "$GITHUB_OUTPUT"
+
+      # Restore the newest state.json saved for today. Prefix match via
+      # restore-keys pulls the most recent same-day cache. A new day misses
+      # entirely -> no state.json restored -> script resets fired[] (daily reset).
+      - name: Restore quiz state
+        uses: actions/cache/restore@v4
+        with:
+          path: state.json
+          key: ${{ steps.keys.outputs.save_key }}
+          restore-keys: |
+            quiz-state-${{ steps.keys.outputs.date }}-
+
       - name: Run the quiz check
         env:
           NTFY_TOPIC: ${{ secrets.NTFY_TOPIC }}
-          # On manual runs only, force an immediate test push from the chosen slot.
-          FORCE_SLOT: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.test_slot || '' }}
+          NTFY_SERVER: ${{ secrets.NTFY_SERVER }}
+          FORCE_SLOT: ${{ github.event.inputs.force_slot }}
         run: python3 send_question.py
+
+      # Always save under a unique key so it never collides with an existing
+      # cache entry. The next run's restore-keys prefix will find this one.
+      - name: Save quiz state
+        if: always()
+        uses: actions/cache/save@v4
+        with:
+          path: state.json
+          key: ${{ steps.keys.outputs.save_key }}
