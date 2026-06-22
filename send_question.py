@@ -25,6 +25,11 @@ import urllib.request
 NTFY_TOPIC = os.environ.get("NTFY_TOPIC", "REPLACE-WITH-YOUR-TOPIC")
 NTFY_SERVER = os.environ.get("NTFY_SERVER", "https://ntfy.sh")
 FORCE_SLOT = os.environ.get("FORCE_SLOT")   # set 0..4 for a manual test push
+# Blank lines between the question and the hidden answer. Sized for an iPhone 16
+# expanded notification (~44 chars/line): shortest question block ~11 lines, so
+# 40 - 11 + 3 = 32 keeps the answer below the fold on the shortest question too.
+# Bump it if the answer still shows; drop it if the scroll is too long.
+GAP_LINES = int(os.environ.get("GAP_LINES", "32"))
 SLOTS_PER_DAY = 5
 # ------------------------------------------------------
 
@@ -67,11 +72,12 @@ def send(slot: int) -> None:
     q = questions[counter % n]
     o = q["options"]
     title = f"SC-300 - {q['tag']}"
+    gap = "\n" * GAP_LINES  # blank lines pushing the answer below the fold
     body = (
         f"{q['question']}\n\n"
         f"A. {o['A']}\nB. {o['B']}\nC. {o['C']}\nD. {o['D']}\n\n"
         f"-- think first --\nscroll down for the answer\n"
-        f"\n\n\n\n"
+        f"{gap}"
         f"Answer: {q['answer']}\n\n{q['explanation']}"
     )
     req = urllib.request.Request(
