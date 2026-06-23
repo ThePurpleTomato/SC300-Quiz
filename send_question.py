@@ -33,9 +33,9 @@ GAP_LINES = int(os.environ.get("GAP_LINES", "32"))
 SLOTS_PER_DAY = 5
 # ------------------------------------------------------
 
-# Candidate grid: 15-min steps from 00:00 to 07:30 UTC == 08:00 to 15:30 Perth (AWST, UTC+8).
-# That's indices 0..30. Split into 5 blocks; one random pick per block per day.
-BLOCKS = [(0, 5), (6, 11), (12, 17), (18, 23), (24, 30)]
+# Candidate grid: 15-min steps from 00:00 to 08:30 UTC == 08:00 to 16:30 Perth (AWST, UTC+8).
+# That's indices 0..34. Split into 5 blocks; one random pick per block per day.
+BLOCKS = [(0, 6), (7, 13), (14, 20), (21, 27), (28, 34)]
 
 here = pathlib.Path(__file__).parent
 STATE_PATH = here / "state.json"
@@ -103,7 +103,7 @@ if FORCE_SLOT and FORCE_SLOT.strip():
 now = datetime.datetime.now(datetime.timezone.utc)
 mins = now.hour * 60 + now.minute
 idx = round(mins / 15)
-if idx < 0 or idx > 30:
+if idx < 0 or idx > 34:
     print(f"skip: outside window (idx={idx})")
     sys.exit(0)
 
