@@ -1,57 +1,59 @@
 name: SC-300 push quiz
 
 on:
-  schedule:
-    # Every 15 min across 00:00-07:30 UTC == 08:00-15:30 Perth (AWST, UTC+8, no DST).
-    # The script decides, once per day, the 5 random times to actually push; every
-    # other run exits in ~1s. Runs all 7 days (use "1-5" for Mon-Fri only).
-    - cron: "0,15,30,45 0-6 * * *"
-    - cron: "0,15,30 7 * * *"
+  # External trigger: cron-job.org POSTs a repository_dispatch every 15 min.
+  repository_dispatch:
+    types: [quiz-tick]
+  # Manual test from the Actions tab: forces an immediate push from a chosen slot.
   workflow_dispatch:
     inputs:
       test_slot:
-        description: "Send a test question now from this slot (0-4)"
+        description: "Manual test: send this slot now (0-4)"
         required: false
         default: "0"
+  # Harmless backup. GitHub may throttle these on a quiet repo, which is exactly
+  # why cron-job.org is the real driver; concurrency + state stop any double-send.
+  schedule:
+    - cron: "0,15,30,45 0-7 * * 1-5"
 
-# Serialize runs so two near-simultaneous crons don't race on cache state.
+permissions:
+  contents: read
+
+# Serialize runs so two near-simultaneous triggers can't race on state.json.
 concurrency:
-  group: sc300-push
+  group: sc300-quiz
   cancel-in-progress: false
 
 jobs:
   push:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v4
 
-      - name: Compute cache keys
-        id: keys
-        run: |
-          DATE=$(date -u +%F)
-          echo "date=$DATE" >> "$GITHUB_OUTPUT"
-          echo "save_key=quiz-state-$DATE-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}" >> "$GITHUB_OUTPUT"
-
-      # Restore the newest state.json saved for today. A new day misses the prefix
-      # entirely -> nothing restored -> script resets fired[] (daily reset).
+      # Restore the most recent state.json. The exact key never hits, so the
+      # prefix restore-key grabs the latest cache from any prior run. The script
+      # itself resets the "fired" list when the stored date isn't today.
       - name: Restore quiz state
         uses: actions/cache/restore@v4
         with:
           path: state.json
-          key: ${{ steps.keys.outputs.save_key }}
+          key: sc300-state-${{ github.run_id }}-${{ github.run_attempt }}
           restore-keys: |
-            quiz-state-${{ steps.keys.outputs.date }}-
+            sc300-state-
 
-      - name: Run the quiz check
+      - name: Run the quiz gate
         env:
           NTFY_TOPIC: ${{ secrets.NTFY_TOPIC }}
-          # On manual runs only, force an immediate test push from the chosen slot.
+          # Only a manual run forces a push; external/scheduled runs leave this
+          # empty so the gate decides.
           FORCE_SLOT: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.test_slot || '' }}
         run: python3 send_question.py
 
+      # Always save an updated state.json under a unique key (immutable caches
+      # mean every run must use a fresh key to actually persist changes).
       - name: Save quiz state
         if: always()
         uses: actions/cache/save@v4
         with:
           path: state.json
-          key: ${{ steps.keys.outputs.save_key }}
+          key: sc300-state-${{ github.run_id }}-${{ github.run_attempt }}
